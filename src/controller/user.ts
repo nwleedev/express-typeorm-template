@@ -139,7 +139,7 @@ router.post('/signout', (req: Request, res: Response) => {
 });
 
 router.post('/auth', async (req: Request, res: Response) => {
-  const accessToken = req.headers.authorization.split(' ')[1];
+  const accessToken = req.headers.authorization!.split(' ')[1];
   const verified = await verifyJWTToken(accessToken);
   if (!verified) {
     res.status(403).json({
@@ -164,7 +164,14 @@ router.post('/auth', async (req: Request, res: Response) => {
       return;
     }
     const { accessToken: newAccessToken, decoded } = response;
-    const { password, ...props } = await checkUser(decoded.id as number);
+    const checked = await checkUser(decoded.id as number);
+    if (!checked) {
+      res.status(400).json({
+        message: 'User Not Found',
+      });
+      return;
+    }
+    const { password, ...props } = checked;
     res.status(200).json({
       message: 'Access Token Re-Created',
       user: props,
@@ -173,7 +180,14 @@ router.post('/auth', async (req: Request, res: Response) => {
     return;
   }
   const { decoded } = verified;
-  const { password, ...props } = await checkUser(decoded.id as number);
+  const checked = await checkUser(decoded.id as number);
+  if (!checked) {
+    res.status(400).json({
+      message: 'User Not Found',
+    });
+    return;
+  }
+  const { password, ...props } = checked;
   res.status(200).json({
     message: 'Authenticated',
     user: props,
@@ -186,7 +200,7 @@ router.post(
   auth,
   validatePassword,
   async (req: Request, res: Response) => {
-    const userId = req.user;
+    const userId = req.user!;
     const { password } = req.body;
     const user = await deleteUser(userId, password);
     if (!user) {
@@ -247,7 +261,7 @@ router.post(
   auth,
   validatePassword,
   async (req: Request, res: Response) => {
-    const userId = req.user;
+    const userId = req.user!;
     const { password } = req.body;
     const user = await changePassword(userId, password);
     if (!user) {
